@@ -1,11 +1,15 @@
 import React, { useState, useEffect, FormEvent } from 'react';
 import TodoForm from './TodoForm';
 import TodoList from './TodoList';
-import { Todo } from '../types';
+import TodoFilter from './TodoFilter';
+import { Todo, Filter } from '../types';
 
 const TodoApp = () => {
     const [todos, setTodos] = useState<Todo[]>([]);
     const [newTodoTitle, setNewTodoTitle] = useState<string>('');
+    const [filter, setFilter] = useState<Filter>('all');
+    const LIST_LIMIT = 20; 
+    const LIST_URL = 'https://jsonplaceholder.typicode.com/todos';
 
     useEffect(() => {
         const savedTodos = localStorage.getItem('todos');
@@ -18,9 +22,9 @@ const TodoApp = () => {
 
     const fetchTodos = async () => {
         try {
-            const response = await fetch('https://jsonplaceholder.typicode.com/todos');
+            const response = await fetch(LIST_URL);
             const data = await response.json();
-            setTodos(data.slice(0, 20));  // Limit to the first 20 items
+            setTodos(data.slice(0, LIST_LIMIT));
         } catch (error) {
             console.error('Error fetching to-dos:', error);
         }
@@ -41,7 +45,8 @@ const TodoApp = () => {
 
         const generateRandomId = () => {
             const random1 = Math.floor(Math.random() * 1000) + 1;
-            const random2 = Math.floor(Math.random() * 1000) - 1000;
+            const random2 = Math.floor(Math.random() * 1000) + 1000;
+
             return random1 + random2;
         };
 
@@ -64,8 +69,19 @@ const TodoApp = () => {
     };
 
     const deleteTodo = (id: number) => {
-        setTodos(prevTodos => prevTodos.filter(todo => todo.id !== id));  // Remove todo by id
+        setTodos(prevTodos => prevTodos.filter(todo => todo.id !== id));
     };
+
+    const handleFilterChange = (filter: Filter) => {
+        setFilter(filter);
+    };
+
+    const filteredTodos = todos.filter(todo => {
+        if (filter === 'completed') return todo.completed;
+        if (filter === 'pending') return !todo.completed;
+
+        return true;
+    });
 
     return (
         <div className="container mt-4">
@@ -77,8 +93,13 @@ const TodoApp = () => {
                 handleAddTodo={handleAddTodo}
             />
 
+            <TodoFilter
+                currentFilter={filter}
+                onFilterChange={handleFilterChange}
+            />
+
             <TodoList
-                todos={todos}
+                todos={filteredTodos}
                 toggleCompletion={toggleCompletion}
                 deleteTodo={deleteTodo}
             />
